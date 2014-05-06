@@ -15,7 +15,8 @@ public class Rhinode {
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
+		System.out.println(new File ("").getCanonicalPath());
 		String fileName = "res/hello.js";
 		if (args.length > 0) {
 			fileName = args[0];
