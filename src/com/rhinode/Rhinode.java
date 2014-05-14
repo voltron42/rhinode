@@ -1,56 +1,54 @@
 package com.rhinode;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.apache.commons.io.IOUtils;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.FunctionObject;
+import org.mozilla.javascript.ScriptableObject;
+
+import com.rhinode.global.Console;
+import com.rhinode.interpreter.JsInterpreter;
 
 public class Rhinode {
 
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) throws Exception {
-		System.out.println(System.getProperty("path"));
-		System.out.println(new File ("").getCanonicalPath());
+	public static void main(String[] args) {
 		String fileName = "res/hello.js";
 		if (args.length > 0) {
 			fileName = args[0];
 		}
-		File scriptFile = new File(fileName);
-		ByteArrayOutputStream scriptTextStream = new ByteArrayOutputStream();
 		
-		 // Creates and enters a Context. The Context stores information
-        // about the execution environment of a script.
-        Context cx = Context.enter();
-        try {
-        	IOUtils.copy(new FileInputStream(scriptFile), scriptTextStream);
-            // Initialize the standard objects (Object, Function, etc.)
-            // This must be done before scripts can be executed. Returns
-            // a scope object that we use in later calls.
-            Scriptable scope = cx.initStandardObjects();
-
-            // Now evaluate the string we've colected.
-            Object result = cx.evaluateString(scope, new String(scriptTextStream.toByteArray()), "<cmd>", 1, null);
-
-            // Convert the result to a string and print it.
-            System.err.println(Context.toString(result));
-
-        } catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
-            // Exit from the context.
-            Context.exit();
-        }
+		String resultStr = JsInterpreter.interpret(fileName, getGlobalNative(Console.class));
+        
+        // Convert the result to a string and print it.
+        System.err.println(resultStr);
     }
 
+	private static Map<String, Object> getGlobalNative(Class<?>...classes) {
+		Map<String, Object> out = new HashMap<String, Object>();
+		for (Class<?> cls : classes) {
+			ScriptableObject obj = new ScriptableObject() {
+				private static final long serialVersionUID = 1L;
+				
+				@Override
+				public String getClassName() {
+					return "Object";
+				}
+			};
+			
+			for (Method method : Console.class.getDeclaredMethods()) {
+				if (Modifier.isStatic(method.getModifiers())) {
+					FunctionObject fn = new FunctionObject(method.getName(),method,obj);
+					obj.defineProperty(method.getName(), fn, ScriptableObject.PERMANENT);
+				}
+			}
+			
+			out.put(cls.getSimpleName().toLowerCase(), obj);
+		}
+		return out;
+	}
 }
