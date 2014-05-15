@@ -1,4 +1,4 @@
-package com.rhinode;
+package com.rhinode.global;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -8,27 +8,13 @@ import java.util.Map;
 import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.ScriptableObject;
 
-import com.rhinode.global.Console;
-import com.rhinode.interpreter.JsInterpreter;
+public class Native {
 
-public class Rhinode {
+	private static final Class<?>[] classes = {Console.class};
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		String fileName = "res/hello.js";
-		if (args.length > 0) {
-			fileName = args[0];
-		}
-		
-		String resultStr = JsInterpreter.interpret(fileName, getGlobalNative(Console.class));
-        
-        // Convert the result to a string and print it.
-        System.err.println(resultStr);
-    }
-
-	private static Map<String, Object> getGlobalNative(Class<?>...classes) {
+	public Native() {}
+	
+	public Map<String, Object> get() {
 		Map<String, Object> out = new HashMap<String, Object>();
 		for (Class<?> cls : classes) {
 			ScriptableObject obj = new ScriptableObject() {
@@ -51,4 +37,5 @@ public class Rhinode {
 		}
 		return out;
 	}
+
 }
