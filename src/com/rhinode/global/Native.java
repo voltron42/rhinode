@@ -10,32 +10,40 @@ import org.mozilla.javascript.ScriptableObject;
 
 public class Native {
 
-	private static final Class<?>[] classes = {Console.class};
-
-	public Native() {}
+	private static final Class<?>[] globalClasses = {Require.class};
+	private static final Class<?>[] encapsulatedClasses = {Console.class};
 	
-	public Map<String, Object> get() {
-		Map<String, Object> out = new HashMap<String, Object>();
+	public static void applyTo(ScriptableObject scope, Class<?>...classes) {
 		for (Class<?> cls : classes) {
-			ScriptableObject obj = new ScriptableObject() {
-				private static final long serialVersionUID = 1L;
-				
-				@Override
-				public String getClassName() {
-					return "Object";
-				}
-			};
-			
-			for (Method method : Console.class.getDeclaredMethods()) {
-				if (Modifier.isStatic(method.getModifiers())) {
-					FunctionObject fn = new FunctionObject(method.getName(),method,obj);
-					obj.defineProperty(method.getName(), fn, ScriptableObject.PERMANENT);
-				}
-			}
-			
-			out.put(cls.getSimpleName().toLowerCase(), obj);
+			apply(scope,cls);
 		}
-		return out;
+	}
+	
+	public static void applyEncapsulated(ScriptableObject scope, String encapsulationName, Class<?>...classes) {
+		ScriptableObject obj = new ScriptableObject() {
+			private static final long serialVersionUID = 1L;
+			
+			@Override
+			public String getClassName() {
+				return "Object";
+			}
+		};
+		applyTo(obj,classes);
+		scope.defineProperty(encapsulationName, obj, ScriptableObject.PERMANENT);
+	}
+	
+	public static void applyGlobal(ScriptableObject scope) {
+		applyTo(scope, Require.class);
+		applyEncapsulated(scope, "console", Console.class);
+	}
+	
+	private static void apply(ScriptableObject scope, Class<?> cls) {
+		for (Method method : cls.getDeclaredMethods()) {
+			if (Modifier.isStatic(method.getModifiers())) {
+				FunctionObject fn = new FunctionObject(method.getName(),method,scope);
+				scope.defineProperty(method.getName(), fn, ScriptableObject.PERMANENT);
+			}
+		}
 	}
 
 }

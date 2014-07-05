@@ -9,7 +9,7 @@ import org.mozilla.javascript.Scriptable;
 public class Console {
 
 	public static Object log(Context cx, Scriptable thisObj, Object[] args, Function funObj) {
-		System.out.println(Arrays.asList(args));
+		System.out.println(args[0]);
 		return null;
 	}
 }

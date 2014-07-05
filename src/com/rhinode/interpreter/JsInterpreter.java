@@ -1,8 +1,6 @@
 package com.rhinode.interpreter;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -12,7 +10,7 @@ import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.ScriptableObject;
 
-import com.rhinode.util.FileReader;
+import com.rhinode.global.Native;
 
 public class JsInterpreter {
 	
@@ -24,20 +22,37 @@ public class JsInterpreter {
 		}
 	}
 
+	private static JsInterpreter instance = null;
+	
+	public static JsInterpreter getInstance() {
+		if (null == instance) {
+			instance = new JsInterpreter();
+			instance.open();
+		}
+		return instance;
+	}
+
 	private Context ctx;
 	private ScriptableObject global;
 	private boolean open;
-	private String sourceName;
 	private int lineno;
 
 	public JsInterpreter() {}
 	
-	public void open(String sourceName) {
-		this.sourceName = sourceName;
-		this.ctx = Context.enter();
-		this.global = this.ctx.initStandardObjects();
+	public JsInterpreter(Context ctx, ScriptableObject global) {
+		this.ctx = ctx;
+		this.global = global;
 		this.open = true;
 		this.lineno = 1;
+	}
+	
+	public void open() {
+		if (!open) {
+			this.ctx = Context.enter();
+			this.global = this.ctx.initStandardObjects();
+			this.open = true;
+			this.lineno = 1;
+		}
 	}
 	
 	public void close() {
@@ -56,9 +71,9 @@ public class JsInterpreter {
 		}
 	}
 	
-	public Object interpret(String source) {
+	public Object interpret(String source, String sourceName) {
 		checkOpen();
-		Object result = ctx.evaluateString(this.global, new String(source), this.sourceName, lineno++, null);
+		Object result = ctx.evaluateString(this.global, new String(source), sourceName, lineno++, null);
 		return result;
 	}
 	
@@ -157,15 +172,16 @@ public class JsInterpreter {
 		checkOpen();
         // Add native functionality to scope
         for (Entry<String, Object> gnObj : globalNative.entrySet()) {
-        	this.global.defineProperty(gnObj.getKey(), gnObj.getValue(), ScriptableObject.PERMANENT);
+        	applyGlobalNative(gnObj.getKey(), gnObj.getValue());
         }
 	}
-
-	public Object interpret(String fileName,Map<String,Object> globalNative) {
-		checkOpen();
-		applyGlobalNative(globalNative);
-		String source = new FileReader(fileName).read();
-		return interpret(source);
+	
+	public void applyGlobalNative(String name, Object globalNative) {
+		this.global.defineProperty(name, globalNative, ScriptableObject.PERMANENT);
 	}
 
+	public void applyGlobalNative() {
+		checkOpen();
+		Native.applyGlobal(this.global);
+	}
 }

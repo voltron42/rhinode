@@ -23,10 +23,10 @@ public class JsonProto {
 			new Pair<String,Class<?>>("function(){}",Function.class)
 		);
 		JsInterpreter interp = new JsInterpreter();
-		interp.open(JsonProto.class.getSimpleName());
+		interp.open();
 		for (Pair<String,Class<?>> pair : data) {
 			try {
-				Object result = interp.interpret("(" + pair.t + ")");
+				Object result = interp.interpret("(" + pair.t + ")",JsonProto.class.getSimpleName());
 				System.out.println("toString: " + result);
 				String ctxStr = interp.stringifyResult(result);
 				System.out.println("toCtxStr: " + ctxStr);
